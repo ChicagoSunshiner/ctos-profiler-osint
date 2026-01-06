@@ -15,12 +15,22 @@ function App() {
     if (!username) return;
     setLoading(true);
     setData(null);
+
+    const isDevelopment = window.location.port === '3000';
+    
+    const API_BASE_URL = isDevelopment 
+      ? 'http://127.0.0.1:8000' 
+      : 'https://ctos-profiler-osint.onrender.com';
+
+    console.log("Connecting to node:", API_BASE_URL); // Log dla hakerów
+
     try {
-      // Wywołanie Twojego API w Django
-      const response = await axios.get(`http://127.0.0.1:8000/api/profile/${username}/`);
+      const response = await axios.get(`${API_BASE_URL}/api/profile/${username}/`);
       setData(response.data);
     } catch (error) {
-      alert("ctOS CONNECTION ERROR: SERVER_UNREACHABLE");
+      // Wyświetlamy więcej info o błędzie, żeby wiedzieć co się dzieje
+      console.error(error);
+      alert("ctOS ERROR: NODE_UNREACHABLE. Check if server is waking up.");
     }
     setLoading(false);
   };
