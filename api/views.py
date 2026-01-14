@@ -1,18 +1,22 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .scanner import scan_username
-from .models import ScanLog # Importujemy nasz model
+from .models import SubjectScanLog
 
-class ProfilerAPIView(APIView):
+class ProfileScannerView(APIView):
+    """API Endpoint to initiate a subject scan and log results."""
+    
     def get(self, request, username):
-        # 1. Wykonujemy skan
-        scan_data = scan_username(username)
+        scan_results = scan_username(username)
         
-        # 2. ZAPISUJEMY DO BAZY (To jest ten nowy element!)
-        ScanLog.objects.create(
-            target_alias=username,
-            accounts_found=len(scan_data["found_accounts"])
+        self._log_to_database(scan_results)
+        
+        return Response(scan_results)
+
+    def _log_to_database(self, results):
+        """Helper method to persist scan metadata."""
+        SubjectScanLog.objects.create(
+            subject_alias=results["alias"],
+            intercepted_email=results["intercepted_email"],
+            nodes_discovered=len(results["found_accounts"])
         )
-        
-        # 3. Zwracamy wynik do Reacta
-        return Response(scan_data)
