@@ -1,7 +1,9 @@
 from django.contrib import admin
-from .models import ScanLog
+from .models import SubjectScanLog
 
-@admin.register(ScanLog)
-class ScanLogAdmin(admin.ModelAdmin):
-    list_display = ('target_alias', 'timestamp', 'accounts_found')
-    list_filter = ('timestamp',)
+@admin.register(SubjectScanLog)
+class SubjectScanLogAdmin(admin.ModelAdmin):
+    """Configuration for the Django Admin dashboard."""
+    list_display = ('subject_alias', 'scan_timestamp', 'nodes_discovered', 'intercepted_email')
+    list_filter = ('scan_timestamp',)
+    search_fields = ('subject_alias', 'intercepted_email')
