@@ -70,3 +70,35 @@ npx @capacitor/cli open android
 /core - Main system configuration and security settings.
 
 /frontend - React application source code and mobile assets.
+
+## 💻 Local Presentation Mode (For Evaluators)
+
+The application features a **Smart Environment Switcher**. It automatically detects if it is running on a local machine or in the cloud, adjusting the API connection accordingly.
+
+To run the full stack locally for presentation or testing purposes:
+
+### 1. Start the Backend Node
+Open a terminal in the root directory:
+```bash
+# Activate environment
+venv\Scripts\activate
+
+# Apply local database migrations
+python manage.py migrate
+
+# Start the Django server (Port 8000)
+python manage.py runserver
+```
+### 2. Start the Frontend Interface
+Open a second terminal in the frontend directory:
+```bash
+cd frontend
+npm start
+```
+The app will open at http://localhost:3000 and automatically link to your local Django server.
+
+### 3. Accessing the Data Log (Admin)
+To view the intercepted data history locally:
+1. Go to http://127.0.0.1:8000/admin/
+2. Log in with your superuser (don't forget them like I did!) credentials
+3. Explore the Subject Scan Logs section to see the persistent database records
