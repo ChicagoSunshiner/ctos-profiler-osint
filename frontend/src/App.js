@@ -8,24 +8,37 @@ import './App.css';
 
 const ScanlineEffect = () => <div className="scanlines"></div>;
 
-const ProfileHeader = ({ alias, accountCount }) => (
-  <div className="profile-header" style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
-    <div className="avatar-box" style={{ border: '1px solid #00fbff', padding: '10px' }}>
-      <User color="#00fbff" size={40}/>
-    </div>
-    <div>
-      <h2 style={{ margin: 0, letterSpacing: '2px' }}>{alias.toUpperCase()}</h2>
-      <div style={{
-        color: accountCount > 3 ? '#ff4444' : '#ffaa00', 
-        fontSize: '0.75rem', 
-        fontWeight: 'bold',
-        marginTop: '5px'
-      }}>
-        THREAT_LEVEL: {accountCount > 3 ? 'CRITICAL (HIGH RISK)' : 'MODERATE (OBSERVED)'}
+const ProfileHeader = ({ alias, accountCount }) => {
+  // Logika oceny ekspozycji
+  const getExposureLevel = (count) => {
+    if (count === 0) return { label: 'MINIMAL', color: '#00fbff' };
+    if (count <= 2) return { label: 'LOW', color: '#00fbff' };
+    if (count <= 4) return { label: 'MODERATE', color: '#ffaa00' };
+    return { label: 'HIGH', color: '#ff4444' };
+  };
+
+  const exposure = getExposureLevel(accountCount);
+
+  return (
+    <div className="profile-header" style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
+      <div className="avatar-box" style={{ border: '1px solid #00fbff', padding: '10px' }}>
+        <User color="#00fbff" size={40}/>
+      </div>
+      <div>
+        <h2 style={{ margin: 0, letterSpacing: '2px' }}>{alias.toUpperCase()}</h2>
+        <div style={{
+          color: exposure.color, 
+          fontSize: '0.75rem', 
+          fontWeight: 'bold',
+          marginTop: '5px',
+          letterSpacing: '1px'
+        }}>
+          DIGITAL_EXPOSURE: {exposure.label}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const InterceptedData = ({ email, location }) => (
   <div className="intercept-box" style={{ marginBottom: '20px', padding: '10px', background: 'rgba(0, 251, 255, 0.05)', border: '1px dashed rgba(0, 251, 255, 0.3)' }}>
@@ -81,7 +94,7 @@ function App() {
           onKeyDown={(e) => e.key === 'Enter' && performDiscovery()}
         />
         <button onClick={performDiscovery} disabled={isScanning} className="scan-button">
-          {isScanning ? "PENETRATING NETWORKS..." : "[ INITIATE GLOBAL SCAN ]"}
+          {isScanning ? "CHECKING NETWORKS..." : "[ INITIATE GLOBAL SCAN ]"}
         </button>
       </section>
 
