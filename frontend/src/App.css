@@ -1,79 +1,63 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-:root {
-  --ctos-blue: #00fbff;
-  --ctos-bg: rgba(0, 20, 30, 0.95);
-  --ctos-border: rgba(0, 251, 255, 0.3);
+body, html { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: 'Share Tech Mono', monospace; }
+
+.wd-container { position: relative; width: 100vw; height: 100vh; }
+
+.camera-bg {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  object-fit: cover; filter: grayscale(40%) contrast(120%) brightness(80%);
+  z-index: 1;
 }
 
-body {
-  margin: 0;
-  background-color: #050505;
-  color: white;
-  font-family: 'Share Tech Mono', monospace;
-  overflow-x: hidden;
+.overlay-grid {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
+                    linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+  background-size: 100% 4px, 4px 100%; z-index: 2;
 }
 
-.scanlines {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
-              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-  background-size: 100% 3px, 3px 100%;
-  pointer-events: none;
-  z-index: 100;
-}
-
-.app-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
-}
-
-.search-terminal {
-  border: 1px solid var(--ctos-blue);
-  background: var(--ctos-bg);
-  padding: 20px;
-  width: 100%;
-  max-width: 400px;
-  margin-bottom: 20px;
-  box-shadow: 0 0 20px rgba(0, 251, 255, 0.1);
+.wd-terminal {
+  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+  z-index: 10; width: 90%; max-width: 350px;
 }
 
 input {
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid var(--ctos-blue);
-  color: var(--ctos-blue);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 1.1rem;
-  width: 100%;
-  margin-bottom: 15px;
-  outline: none;
+  background: rgba(0, 0, 0, 0.8); border: 2px solid #fff; color: #fff;
+  width: 100%; padding: 12px; font-family: inherit; font-size: 1rem; margin-bottom: 5px;
 }
 
 button {
-  background: var(--ctos-blue);
-  color: black;
-  border: none;
-  padding: 10px;
-  width: 100%;
-  font-family: 'Share Tech Mono', monospace;
-  font-weight: bold;
-  cursor: pointer;
+  background: #fff; color: #000; border: none; width: 100%; padding: 10px;
+  font-weight: bold; cursor: pointer; text-transform: uppercase;
 }
 
-.profiler-card {
-  width: 100%;
-  max-width: 400px;
-  border-left: 5px solid var(--ctos-blue);
-  background: var(--ctos-bg);
-  padding: 20px;
-  clip-path: polygon(0 0, 100% 0, 100% 90%, 90% 100%, 0 100%);
+.wd-card {
+  position: absolute; top: 10%; right: 5%; width: 280px;
+  background: rgba(0, 0, 0, 0.85); border-left: 3px solid #fff; z-index: 10;
 }
 
-.label { color: var(--ctos-blue); font-size: 0.8rem; }
-.data-row { border-bottom: 1px solid var(--ctos-border); padding: 8px 0; display: flex; justify-content: space-between; }
+.wd-header {
+  background: #fff; color: #000; padding: 4px 10px; font-weight: bold;
+  display: flex; justify-content: space-between; font-size: 0.8rem;
+}
+
+.wd-body { padding: 15px; }
+
+.avatar-frame {
+  width: 100%; height: 160px; background: #111; margin-bottom: 10px;
+  border: 1px solid rgba(255,255,255,0.2); overflow: hidden; position: relative;
+}
+
+.avatar-frame img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%); }
+
+.info-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.85rem; }
+
+.label { color: #00fbff; margin-right: 10px; }
+
+.probability-bar { width: 100%; height: 4px; background: #333; margin: 10px 0; }
+.bar-fill { height: 100%; background: #00fbff; box-shadow: 0 0 10px #00fbff; }
+
+.node-item { font-size: 0.7rem; color: #aaa; border-bottom: 1px solid #222; padding: 4px 0; }
+
+.cyan { color: #00fbff; }

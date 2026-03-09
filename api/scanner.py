@@ -1,99 +1,65 @@
 import requests
+from bs4 import BeautifulSoup
+from googlesearch import search
+import random
 
-# Constants for cleaner configuration
-USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-)
-
-class OSINTScanner:
-    """Service class to handle social media profile scanning."""
-    
-    def __init__(self, username):
-        self.username = username
+class ProfilerEngine:
+    def __init__(self, query):
+        self.query = query
         self.session = requests.Session()
-        self.session.headers.update({'User-Agent': USER_AGENT})
+        self.session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/119.0.0.0 Safari/537.36'})
         self.results = {
-            "alias": username,
-            "intercepted_email": None,
-            "location": "UNKNOWN",
-            "found_accounts": []
+            "alias": query,
+            "subject_name": "UNKNOWN",
+            "avatar_url": None,
+            "probability": 0,
+            "nodes": []
         }
 
-    def _get_targets(self):
-        """Returns a dictionary of supported platforms and their validation rules."""
-        return {
-            "GitHub": {
-                "url": f"https://api.github.com/users/{self.username}",
-                "is_api": True
-            },
-            "Reddit": {
-                "url": f"https://www.reddit.com/user/{self.username}",
-                "error_msg": "Sorry, nobody on Reddit goes by that name"
-            },
-            "Instagram": {
-                "url": f"https://www.instagram.com/{self.username}/",
-                "check_login": True
-            },
-            "Facebook": {
-                "url": f"https://www.facebook.com/{self.username}",
-                "error_msg": "content_not_found"
-            },
-            "Steam": {
-                "url": f"https://steamcommunity.com/id/{self.username}",
-                "error_msg": "The specified profile could not be found"
-            }
-        }
+    def _extract_og_image(self, url):
+        """Extracts profile picture using OpenGraph protocol."""
+        try:
+            resp = self.session.get(url, timeout=3)
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            img = soup.find("meta", property="og:image")
+            return img["content"] if img else None
+        except: return None
 
-    def _validate_response(self, platform, response, info):
-        """Validates if the profile actually exists based on content analysis."""
-        if response.status_code != 200:
-            return False
-            
-        content = response.text
-        if "error_msg" in info and info["error_msg"] in content:
-            return False
-            
-        if info.get("check_login") and "login" in response.url.lower():
-            return False
-            
-        return True
+    def run(self):
+        # 1. Identity Resolution (Dorking)
+        # If query has space, assume Name Search. If not, assume Nickname.
+        platforms = ['instagram.com', 'github.com', 'facebook.com', 'steamcommunity.com']
+        search_query = f"{self.query} profile " + " OR ".join([f"site:{p}" for p in platforms])
+        
+        discovered_links = []
+        try:
+            # We take first 4 fast results
+            for url in search(search_query, num_results=4):
+                discovered_links.append(url)
+        except: pass
 
-    def perform_scan(self):
-        """Main entry point for scanning process."""
-        targets = self._get_targets()
+        # 2. Scanning Nodes
+        for url in discovered_links:
+            platform_name = "Unknown Node"
+            for p in platforms:
+                if p in url: platform_name = p.split('.')[0].capitalize()
+            
+            avatar = self._extract_og_image(url)
+            if not self.results["avatar_url"] and avatar:
+                self.results["avatar_url"] = avatar
+            
+            self.results["nodes"].append({
+                "platform": platform_name,
+                "url": url
+            })
 
-        for platform, info in targets.items():
-            try:
-                if info.get("is_api"):
-                    self._handle_github_api(platform, info["url"])
-                else:
-                    self._handle_web_scrape(platform, info)
-            except requests.RequestException:
-                continue
-                
+        # 3. Probable Cause Calculation (WD1 Style)
+        hits = len(self.results["nodes"])
+        if hits > 0:
+            # Base probability + variance for realism
+            self.results["probability"] = min(45 + (hits * 12) + random.randint(1, 10), 99)
+        
         return self.results
 
-    def _handle_github_api(self, platform, url):
-        response = self.session.get(url, timeout=5)
-        if response.status_code == 200:
-            data = response.json()
-            self.results["intercepted_email"] = data.get("email")
-            self.results["location"] = data.get("location") or "UNKNOWN"
-            self.results["found_accounts"].append({
-                "platform": platform,
-                "url": f"https://github.com/{self.username}"
-            })
-
-    def _handle_web_scrape(self, platform, info):
-        response = self.session.get(info["url"], timeout=5, allow_redirects=True)
-        if self._validate_response(platform, response, info):
-            self.results["found_accounts"].append({
-                "platform": platform,
-                "url": info["url"]
-            })
-
-def scan_username(username):
-    """Wrapper function for easier access from views."""
-    scanner = OSINTScanner(username)
-    return scanner.perform_scan()
+def scan_username(query):
+    return ProfilerEngine(query).run()

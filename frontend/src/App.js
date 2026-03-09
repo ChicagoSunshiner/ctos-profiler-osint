@@ -1,142 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, User, Globe, Activity, Mail, MapPin } from 'lucide-react';
+import { User, Activity, ShieldAlert, Camera } from 'lucide-react';
 import './App.css';
 
-// --- Clean Code: Sub-components for better modularity ---
-
-const ScanlineEffect = () => <div className="scanlines"></div>;
-
-const ProfileHeader = ({ alias, accountCount }) => {
-  // Logika oceny ekspozycji
-  const getExposureLevel = (count) => {
-    if (count === 0) return { label: 'MINIMAL', color: '#00fbff' };
-    if (count <= 2) return { label: 'LOW', color: '#00fbff' };
-    if (count <= 4) return { label: 'MODERATE', color: '#ffaa00' };
-    return { label: 'HIGH', color: '#ff4444' };
-  };
-
-  const exposure = getExposureLevel(accountCount);
-
-  return (
-    <div className="profile-header" style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
-      <div className="avatar-box" style={{ border: '1px solid #00fbff', padding: '10px' }}>
-        <User color="#00fbff" size={40}/>
-      </div>
-      <div>
-        <h2 style={{ margin: 0, letterSpacing: '2px' }}>{alias.toUpperCase()}</h2>
-        <div style={{
-          color: exposure.color, 
-          fontSize: '0.75rem', 
-          fontWeight: 'bold',
-          marginTop: '5px',
-          letterSpacing: '1px'
-        }}>
-          DIGITAL_EXPOSURE: {exposure.label}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const InterceptedData = ({ email, location }) => (
-  <div className="intercept-box" style={{ marginBottom: '20px', padding: '10px', background: 'rgba(0, 251, 255, 0.05)', border: '1px dashed rgba(0, 251, 255, 0.3)' }}>
-    <div className="data-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-      <span className="label" style={{ color: '#00fbff', fontSize: '0.8rem' }}><Mail size={12}/> INTERCEPTED_EMAIL:</span>
-      <span style={{ color: email ? '#00fbff' : '#666', fontSize: '0.9rem' }}>{email || "PRIVATE_ENCRYPTED"}</span>
-    </div>
-    <div className="data-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-      <span className="label" style={{ color: '#00fbff', fontSize: '0.8rem' }}><MapPin size={12}/> GEOLOCATION_NODE:</span>
-      <span style={{ fontSize: '0.9rem' }}>{location.toUpperCase()}</span>
-    </div>
-  </div>
-);
-
-// --- Main Application Component ---
-
 function App() {
-  const [username, setUsername] = useState('');
-  const [subjectData, setSubjectData] = useState(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const [query, setQuery] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const videoRef = useRef(null);
 
-  const performDiscovery = async () => {
-    if (!username) return;
-    setIsScanning(true);
-    setSubjectData(null);
-
-    const API_URL = window.location.port === '3000' 
-      ? 'http://127.0.0.1:8000' 
-      : 'https://ctos-profiler-osint.onrender.com';
-
-    try {
-      const response = await axios.get(`${API_URL}/api/profile/${username}/`);
-      setSubjectData(response.data);
-    } catch (error) {
-      alert("SYSTEM ERROR: ctOS NODE UNREACHABLE");
-    } finally {
-      setIsScanning(false);
+  // Start Camera for "Aiden Pearce" Look
+  useEffect(() => {
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch (err) { console.log("Camera blocked"); }
     }
+    startCamera();
+  }, []);
+
+  const initiateScan = async () => {
+    if (!query) return;
+    setLoading(true);
+    setData(null);
+    try {
+      const API = window.location.port === '3000' ? 'http://127.0.0.1:8000' : 'https://ctos-profiler-osint.onrender.com';
+      const res = await axios.get(`${API}/api/profile/${query}/`);
+      setData(res.data);
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    } catch (e) { alert("CONNECTION_LOST: ctOS NODE_OFFLINE"); }
+    setLoading(false);
   };
 
   return (
-    <div className="app-container">
-      <ScanlineEffect />
-      
-      <section className="search-terminal">
-        <header className="terminal-header" style={{ color: '#00fbff', fontSize: '0.6rem', marginBottom: '8px' }}>
-          <Activity size={10} /> ctOS_V3.5_MOBILE_PROFILER
-        </header>
+    <div className="wd-container">
+      {/* Real-time Camera Background */}
+      <video ref={videoRef} autoPlay playsInline className="camera-bg" />
+      <div className="overlay-grid" />
+
+      {/* Input Terminal */}
+      <div className="wd-terminal">
         <input 
-          placeholder="ENTER SUBJECT ALIAS..." 
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && performDiscovery()}
+          placeholder="[ SEARCH_TARGET ]" 
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && initiateScan()}
         />
-        <button onClick={performDiscovery} disabled={isScanning} className="scan-button">
-          {isScanning ? "CHECKING NETWORKS..." : "[ INITIATE GLOBAL SCAN ]"}
+        <button onClick={initiateScan} className={loading ? "scanning" : ""}>
+          {loading ? "PROFILING..." : "PROFILER_INIT"}
         </button>
-      </section>
+      </div>
 
+      {/* WD1 Profiler Card */}
       <AnimatePresence>
-        {subjectData && (
-          <motion.div 
-            initial={{ x: -100, opacity: 0 }} 
-            animate={{ x: 0, opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            className="profiler-card"
-          >
-            <div className="status-header" style={{ background: '#00fbff', color: 'black', padding: '2px 10px', fontSize: '0.7rem', display: 'inline-block', marginBottom: '15px' }}>
-              SUBJECT_IDENTIFIED
+        {data && (
+          <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} className="wd-card">
+            <div className="wd-header">
+              <span>PERSON_OF_INTEREST</span>
+              <span className="id-tag">ID: {Math.floor(Math.random()*9999)}</span>
             </div>
-
-            <ProfileHeader 
-              alias={subjectData.alias} 
-              accountCount={subjectData.found_accounts.length} 
-            />
             
-            <InterceptedData 
-              email={subjectData.intercepted_email} 
-              location={subjectData.location} 
-            />
-
-            <div className="node-list">
-              <div className="label" style={{ color: '#00fbff', fontSize: '0.7rem', marginBottom: '10px' }}>
-                <Globe size={12} /> ACTIVE_DATA_NODES:
+            <div className="wd-body">
+              <div className="avatar-frame">
+                {data.avatar_url ? <img src={data.avatar_url} alt="target" /> : <div className="no-img">NO_VISUAL_DATA</div>}
+                <div className="scanline-v" />
               </div>
-              {subjectData.found_accounts.map((node, index) => (
-                <div key={index} className="data-row node-item" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0, 251, 255, 0.1)', padding: '8px 0' }}>
-                  <span>{node.platform.toUpperCase()}</span>
-                  <a href={node.url} target="_blank" rel="noreferrer" className="link-btn" style={{ color: 'white', textDecoration: 'none' }}>
-                    [ ACCESS_NODE ]
-                  </a>
-                </div>
-              ))}
-            </div>
 
-            <footer style={{ fontSize: '0.5rem', marginTop: '20px', opacity: 0.3, textAlign: 'right' }}>
-              ctOS_PROFILER_PROTOCOL_BY_DEDSEC
-            </footer>
+              <div className="info-row">
+                <span className="label">SUBJECT:</span>
+                <span className="value">{data.alias.toUpperCase()}</span>
+              </div>
+
+              <div className="info-row">
+                <span className="label">PROBABLE_CAUSE:</span>
+                <span className="value cyan">{data.probability}% MATCH</span>
+              </div>
+
+              <div className="probability-bar">
+                <motion.div initial={{width: 0}} animate={{width: `${data.probability}%`}} className="bar-fill" />
+              </div>
+
+              <div className="node-list">
+                <span className="label">DETECTED_NODES:</span>
+                {data.found_accounts?.map((node, i) => (
+                  <div key={i} className="node-item">{node.platform} >> LINKED</div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
